@@ -9,7 +9,6 @@ app.use(cors());
 app.use(express.json());
 
 
-
 const { MongoClient, ServerApiVersion,} = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.bkpsd7x.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -28,7 +27,13 @@ async function run() {
     // await client.connect();
 
     const recipeCollection = client.db('recipeSharingDB').collection('recipes')
+    const userCollection = client.db('recipeSharingDB').collection('users')
 
+
+    app.get('/recipes', async(req, res) =>{
+      const result = await recipeCollection.find().toArray();
+      res.send(result)
+  })
     
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
