@@ -2,6 +2,7 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 5000;
 
 //  middleware
@@ -26,9 +27,10 @@ async function run() {
     // await client.connect();
 
     const recipeCollection = client.db("recipeSharingDB").collection("recipes");
-    const moreRecipeCollection = client.db("recipeSharingDB").collection("moreRecipes");
+    const moreRecipeCollection = client
+      .db("recipeSharingDB")
+      .collection("moreRecipes");
     const userCollection = client.db("recipeSharingDB").collection("users");
-
 
     // recipes api
     app.post("/recipes", async (req, res) => {
@@ -55,42 +57,72 @@ async function run() {
       res.send(result);
     });
 
-
     // user api
-    app.post('/users', async(req, res) =>{
+    app.post("/users", async (req, res) => {
       const user = req.body;
       const query = {
-        email : user.email,
-        name : user.name,
+        email: user.email,
+        name: user.name,
         photo: user.photo,
-        coin: user.coin
-      }
-      const existingUser = await userCollection.findOne(query)
-      if(existingUser){
-          return res.send({message: 'user already exists',insertedId: null})
+        coin: user.coin,
+      };
+      const existingUser = await userCollection.findOne(query);
+      if (existingUser) {
+        return res.send({ message: "user already exists", insertedId: null });
       }
       const result = await userCollection.insertOne(user);
-      res.send(result)
-  })
+      res.send(result);
+    });
 
-
-  app.get('/users/:name', async (req, res) => {
-    const { name } = req.params; 
-    // console.log(`Fetching user with name: ${name}`); 
-    try {
-      const user = await userCollection.findOne({ name: name });
-      if (user) {
-        res.json(user); 
-      } else {
-        res.status(404).json({ error: 'User not found' }); 
+    app.get("/users/:name", async (req, res) => {
+      const { name } = req.params;
+      // console.log(`Fetching user with name: ${name}`);
+      try {
+        const user = await userCollection.findOne({ name: name });
+        if (user) {
+          res.json(user);
+        } else {
+          res.status(404).json({ error: "User not found" });
+        }
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        res.status(500).json({ error: "Internal Server Error" });
       }
-    } catch (error) {
-      console.error('Error fetching user:', error);
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
+    });
 
+    app.patch("/users", async (req, res) => {
+      const { email, name, coin } = req.body; 
+      console.log(coin);
+    
+      try {
+        const user = await userCollection.findOneAndUpdate(
+          { email },
+          { $set: { name, coin } }, // Update name and set coin to coins
+          { new: true }
+        );
+        res.status(200).json(user);
+      } catch (error) {
+        console.error('Error updating user:', error);
+        res.status(500).json({ error: "Failed to update user" });
+      }
+    });
 
+    // payment intent related api
+    app.post("/create-payment-intent", async (req, res) => {
+      const { price } = req.body;
+      const amount = parseInt(price * 100);
+      console.log("intent amount", amount);
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        payment_method_types: ["card"],
+      });
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+ 
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
