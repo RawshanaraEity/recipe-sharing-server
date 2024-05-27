@@ -29,6 +29,14 @@ async function run() {
     const moreRecipeCollection = client.db("recipeSharingDB").collection("moreRecipes");
     const userCollection = client.db("recipeSharingDB").collection("users");
 
+
+    // recipes api
+    app.post("/recipes", async (req, res) => {
+      const recipe = req.body;
+      const result = await recipeCollection.insertOne(recipe);
+      res.send(result);
+    });
+
     app.get("/recipes", async (req, res) => {
       const result = await recipeCollection.find().toArray();
       res.send(result);
@@ -46,6 +54,43 @@ async function run() {
       const result = await moreRecipeCollection.find().toArray();
       res.send(result);
     });
+
+
+    // user api
+    app.post('/users', async(req, res) =>{
+      const user = req.body;
+      const query = {
+        email : user.email,
+        name : user.name,
+        photo: user.photo,
+        coin: user.coin
+      }
+      const existingUser = await userCollection.findOne(query)
+      if(existingUser){
+          return res.send({message: 'user already exists',insertedId: null})
+      }
+      const result = await userCollection.insertOne(user);
+      res.send(result)
+  })
+
+
+  app.get('/users/:name', async (req, res) => {
+    const { name } = req.params; 
+    // console.log(`Fetching user with name: ${name}`); 
+    try {
+      const user = await userCollection.findOne({ name: name });
+      if (user) {
+        res.json(user); 
+      } else {
+        res.status(404).json({ error: 'User not found' }); 
+      }
+    } catch (error) {
+      console.error('Error fetching user:', error);
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+
+
 
     // Send a ping to confirm a successful connection
     // await client.db("admin").command({ ping: 1 });
