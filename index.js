@@ -92,7 +92,7 @@ async function run() {
 
     app.patch("/users", async (req, res) => {
       const { email, name, coin } = req.body; 
-      console.log(coin);
+      // console.log(coin);
     
       try {
         const user = await userCollection.findOneAndUpdate(
@@ -111,7 +111,7 @@ async function run() {
     app.post("/create-payment-intent", async (req, res) => {
       const { price } = req.body;
       const amount = parseInt(price * 100);
-      console.log("intent amount", amount);
+      // console.log("intent amount", amount);
 
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
