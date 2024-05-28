@@ -97,7 +97,7 @@ async function run() {
       try {
         const user = await userCollection.findOneAndUpdate(
           { email },
-          { $set: { name, coin } }, // Update name and set coin to coins
+          { $set: { name, coin } }, 
           { new: true }
         );
         res.status(200).json(user);
